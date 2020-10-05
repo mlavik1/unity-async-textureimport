@@ -19,3 +19,5 @@ I used [FreeImage](https://freeimage.sourceforge.io/) for the texture loading/co
 # License
  GNU LESSER GENERAL PUBLIC LICENSE
  (See the "LICENSE" file)
+
+ Note: This project uses the FreeImage library. To use this project, you should include a copy of the FreeImage license (GPL or FIPL). See more info here: https://freeimage.sourceforge.io/license.html
