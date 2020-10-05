@@ -7,28 +7,54 @@ using UnityEngine;
 
 namespace AsyncTextureImport
 {
+    /// <summary>
+    /// Async texture importer.
+    /// You can use this from a coroutine, like this:
+    ///    TextureImporter importer = new TextureImporter();
+    ///    yield return importer.ImportTexture(...);
+    /// The result will be available in the "texture" member variable.
+    /// </summary>
     public class TextureImporter
     {
+        /// <summary>
+        /// 
+        /// </summary>
         public Texture2D texture = null;
 
-        private class RawTextureData
-        {
-            public byte[] data;
-            public int mipLevels;
-            public int width;
-            public int height;
-        }
+        /// <summary>
+        /// Image filtering (affects the mipmap quality).
+        /// </summary>
+        public FREE_IMAGE_FILTER imageFilter = FREE_IMAGE_FILTER.FILTER_BILINEAR;
 
-        public IEnumerator ImportTexture(string texturePath, FREE_IMAGE_FORMAT format)
-        {
-            yield return ImportTexture(texturePath, format, -1);
-        }
-
-        public IEnumerator ImportTexture(string texturePath, FREE_IMAGE_FORMAT format, int mipLevels)
+        /// <summary>
+        /// Import texture from file.
+        /// </summary>
+        /// <param name="texturePath">Filepath of texture to load</param>
+        /// <param name="format">Image format of the texture file (JPG, PNG, etc.)</param>
+        /// /// <param name="mipLevels">(optional) Number of mip levels. The default is -1 (auto)</param>
+        /// <returns></returns>
+        public IEnumerator ImportTexture(string texturePath, FREE_IMAGE_FORMAT format, int mipLevels = -1)
         {
             this.texture = null;
 
             Task<RawTextureData> task = Task.Run(() => { return ImportTextureFromFile(texturePath, format, mipLevels); });
+            while (!task.IsCompleted)
+                yield return null;
+            this.texture = CreateTexture(task.Result);
+        }
+
+        /// <summary>
+        /// Import texture from memory.
+        /// </summary>
+        /// <param name="textureData">Texture file data (loaded into memory).</param>
+        /// <param name="format">Image format of the texture file (JPG, PNG, etc.)</param>
+        /// /// <param name="mipLevels">(optional) Number of mip levels. The default is -1 (auto)</param>
+        /// <returns></returns>
+        public IEnumerator ImportTexture(byte[] textureData, FREE_IMAGE_FORMAT format, int mipLevels = -1)
+        {
+            this.texture = null;
+
+            Task<RawTextureData> task = Task.Run(() => { return ImportTextureFromMemory(textureData, format, mipLevels); });
             while (!task.IsCompleted)
                 yield return null;
             this.texture = CreateTexture(task.Result);
@@ -44,6 +70,26 @@ namespace AsyncTextureImport
 
             // Load from file
             IntPtr texHandle = FreeImage.FreeImage_Load(format, texturePath, 0);
+            // Import texture data
+            RawTextureData textureData = ImportTextureData(texHandle, mipLevels);
+
+            if (texHandle != IntPtr.Zero)
+                FreeImage.FreeImage_Unload(texHandle);
+
+            return textureData;
+        }
+
+        private RawTextureData ImportTextureFromMemory(byte[] textureBytes, FREE_IMAGE_FORMAT format, int mipLevels)
+        {
+            if (textureBytes == null || textureBytes.Length == 0)
+            {
+                Debug.LogError("Empty texture data");
+                return null;
+            }
+
+            // Load from memory
+            IntPtr texMem = FreeImage.FreeImage_OpenMemory(Marshal.UnsafeAddrOfPinnedArrayElement(textureBytes, 0), (uint)textureBytes.Length);
+            IntPtr texHandle = FreeImage.FreeImage_LoadFromMemory(format, texMem, 0);
             // Import texture data
             RawTextureData textureData = ImportTextureData(texHandle, mipLevels);
 
@@ -98,7 +144,7 @@ namespace AsyncTextureImport
 
                 byte[] mipData = new byte[mipSize];
 
-                IntPtr mipHandle = FreeImage.FreeImage_Rescale(texHandle, mipWidth, mipHeight, FREE_IMAGE_FILTER.FILTER_BILINEAR);
+                IntPtr mipHandle = FreeImage.FreeImage_Rescale(texHandle, mipWidth, mipHeight, imageFilter);
                 IntPtr mipBmpHandle = FreeImage.FreeImage_ConvertTo32Bits(mipHandle);
                 FreeImage.FreeImage_ConvertToRawBits(Marshal.UnsafeAddrOfPinnedArrayElement(mipData, 0), mipBmpHandle, mipWidth * 4, 32, 0, 0, 0, false);
 
@@ -121,6 +167,14 @@ namespace AsyncTextureImport
             tex.LoadRawTextureData(texData.data);
             tex.Apply(false, true);
             return tex;
+        }
+
+        private class RawTextureData
+        {
+            public byte[] data;
+            public int mipLevels;
+            public int width;
+            public int height;
         }
     }
 }
