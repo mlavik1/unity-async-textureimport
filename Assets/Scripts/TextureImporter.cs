@@ -163,7 +163,7 @@ namespace AsyncTextureImport
                 return null;
 
             Texture2D tex = new Texture2D(texData.width, texData.height, TextureFormat.BGRA32, texData.mipLevels, false);
-            tex.filterMode = FilterMode.Point;
+            tex.filterMode = FilterMode.Trilinear;
             tex.LoadRawTextureData(texData.data);
             tex.Apply(false, true);
             return tex;
