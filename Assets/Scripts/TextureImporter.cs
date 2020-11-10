@@ -1,9 +1,12 @@
-﻿using System;
+﻿using CustomTextureUpdate;
+using System;
 using System.Collections;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.Events;
+using UnityEngine.Rendering;
 
 namespace AsyncTextureImport
 {
@@ -58,6 +61,23 @@ namespace AsyncTextureImport
             while (!task.IsCompleted)
                 yield return null;
             this.texture = CreateTexture(task.Result);
+        }
+
+        /// <summary>
+        /// Import texture from file.
+        /// </summary>
+        /// <param name="texturePath">Filepath of texture to load</param>
+        /// <param name="format">Image format of the texture file (JPG, PNG, etc.)</param>
+        /// /// <param name="mipLevels">(optional) Number of mip levels. The default is -1 (auto)</param>
+        /// <returns></returns>
+        public IEnumerator ImportGPUTexture(string texturePath, FREE_IMAGE_FORMAT format, int mipLevels = -1)
+        {
+            this.texture = null;
+
+            Task<RawTextureData> task = Task.Run(() => { return ImportTextureFromFile(texturePath, format, mipLevels); });
+            while (!task.IsCompleted)
+                yield return null;
+            yield return CreateGPUTexture(task.Result);
         }
 
         private RawTextureData ImportTextureFromFile(string texturePath, FREE_IMAGE_FORMAT format, int mipLevels)
@@ -167,6 +187,39 @@ namespace AsyncTextureImport
             tex.LoadRawTextureData(texData.data);
             tex.Apply(false, true);
             return tex;
+        }
+
+        private IEnumerator CreateGPUTexture(RawTextureData texData)
+        {
+            var handle = GCHandle.Alloc(texData.data, GCHandleType.Pinned);
+            var pointer = handle.AddrOfPinnedObject();
+            uint texID = 0;
+            Task task = Task.Run(() =>
+            {
+                texID = Lib.CreateLoader();
+                Lib.LoadRaw(texID, pointer, texData.data.Length, texData.width, texData.height);
+            });
+            while (!task.IsCompleted)
+                yield return null;
+            handle.Free();
+
+            if (!Lib.HasLoaded(texID))
+            {
+                Debug.LogErrorFormat("failed to load");
+                yield break;
+            }
+
+            var width = Lib.GetWidth(texID);
+            var height = Lib.GetHeight(texID);
+            // TODO: check texture format
+            texture = new Texture2D(width, height, TextureFormat.RGBA32, false);
+
+            CommandBuffer command = new CommandBuffer();
+            command.name = "CustomTextureUpdeate";
+            var callback = Lib.GetTextureUpdateCallback();
+            command.IssuePluginCustomTextureUpdateV2(callback, texture, texID);
+            Graphics.ExecuteCommandBuffer(command);
+            command.Clear();
         }
 
         private class RawTextureData

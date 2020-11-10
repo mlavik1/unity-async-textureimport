@@ -14,6 +14,10 @@ public class TextureLoadTest : MonoBehaviour
         {
             StartCoroutine(ImportTextureFromFile(Path.Combine(Application.streamingAssetsPath, "ghibli.jpg")));
         }
+        else if (GUILayout.Button("Load texture from file (GPU)."))
+        {
+            StartCoroutine(ImportTextureFromFile(Path.Combine(Application.streamingAssetsPath, "ghibli.jpg"), true));
+        }
         else if (GUILayout.Button("Load texture from memory."))
         {
             StartCoroutine(ImportTextureFromMemory(File.ReadAllBytes(Path.Combine(Application.streamingAssetsPath, "ghibli.jpg"))));
@@ -24,13 +28,16 @@ public class TextureLoadTest : MonoBehaviour
         }
     }
 
-    private IEnumerator ImportTextureFromFile(string texPath)
+    private IEnumerator ImportTextureFromFile(string texPath, bool onGPU = false)
     {
         // Create texture importer
         TextureImporter importer = new TextureImporter();
 
         // Import texture async
-        yield return importer.ImportTexture(texPath, FREE_IMAGE_FORMAT.FIF_JPEG);
+        if(onGPU)
+            yield return importer.ImportGPUTexture(texPath, FREE_IMAGE_FORMAT.FIF_JPEG);
+        else
+            yield return importer.ImportTexture(texPath, FREE_IMAGE_FORMAT.FIF_JPEG);
 
         // Fetch the result
         Texture2D tex = importer.texture;
