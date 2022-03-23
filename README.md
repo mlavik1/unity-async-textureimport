@@ -17,7 +17,7 @@ Since the file reading, decompressing and mipmap generation is done in a separat
 I used [FreeImage](https://freeimage.sourceforge.io/) for the texture loading/conversion.
 
 # License
- GNU LESSER GENERAL PUBLIC LICENSE
+ MIT License
  (See the "LICENSE" file)
 
  Note: This project uses the FreeImage library. To use this project, you should include a copy of the FreeImage license (GPL or FIPL). See more info here: https://freeimage.sourceforge.io/license.html
