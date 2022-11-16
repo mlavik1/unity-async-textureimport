@@ -45,7 +45,11 @@ namespace AsyncTextureImport
 
     public class FreeImage
     {
+#if ENABLE_IL2CPP
+        private const string FreeImageLibrary = "__Internal";
+#else
         private const string FreeImageLibrary = "FreeImage";
+#endif
 
         [DllImport(FreeImageLibrary, EntryPoint = "FreeImage_Load")]
         public static extern IntPtr FreeImage_Load(FREE_IMAGE_FORMAT format, string filename, int flags);
