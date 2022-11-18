@@ -16,7 +16,16 @@ public class TextureLoadTest : MonoBehaviour
         }
         else if (GUILayout.Button("Load texture from memory."))
         {
-            StartCoroutine(ImportTextureFromMemory(File.ReadAllBytes(Path.Combine(Application.streamingAssetsPath, "ghibli.jpg"))));
+            string filePath = Path.Combine(Application.streamingAssetsPath, "ghibli.jpg");
+            byte[] bytes;
+#if UNITY_ANDROID && !UNITY_EDITOR
+            WWW reader = new WWW(filePath);
+            while (!reader.isDone) { }
+            bytes = reader.bytes;
+#else
+            bytes = File.ReadAllBytes(filePath);
+#endif
+            StartCoroutine(ImportTextureFromMemory(bytes));
         }
         else if (GUILayout.Button("Load texture with Texture2D.LoadImage (SLOW - for comparison)."))
         {

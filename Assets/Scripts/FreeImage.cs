@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
+// Uncomment to use internal IfcEngine (only in IL2CPP)
+//#define USE_INTERNAL_FREEIMAGE
+
 namespace AsyncTextureImport
 {
     public enum FREE_IMAGE_FORMAT
@@ -45,7 +48,7 @@ namespace AsyncTextureImport
 
     public class FreeImage
     {
-#if ENABLE_IL2CPP
+#if USE_INTERNAL_FREEIMAGE
         private const string FreeImageLibrary = "__Internal";
 #else
         private const string FreeImageLibrary = "FreeImage";
