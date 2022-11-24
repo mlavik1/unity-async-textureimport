@@ -1,8 +1,13 @@
-﻿using System;
-using System.Runtime.InteropServices;
-
-// Uncomment to use internal IfcEngine (only in IL2CPP)
+﻿// Uncomment to use internal IfcEngine (only in IL2CPP)
 //#define USE_INTERNAL_FREEIMAGE
+
+// Unity Editor already links to FreeImage on Linux
+#if UNITY_EDITOR_LINUX
+#define USE_INTERNAL_FREEIMAGE
+#endif
+
+using System;
+using System.Runtime.InteropServices;
 
 namespace AsyncTextureImport
 {
